@@ -1,5 +1,6 @@
 package rest.webservices.restfulwebservices.user;
 
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -25,15 +26,20 @@ public class UserResource {
     public User retrieveUser(@PathVariable Integer id) {
         User user = userDAOService.findById(id);
 
-        if (user == null){
+        if (user == null) {
             throw new UserNotFoundException("id " + id);
         }
         return user;
     }
 
     @PostMapping("/users")
-    public ResponseEntity<User> createUser(@RequestBody User user) {
+    public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
         return new ResponseEntity<User>(userDAOService.saveUser(user), HttpStatus.CREATED);
+    }
+
+    @DeleteMapping("/users/{id}")
+    public void deleteUser(@PathVariable Integer id) {
+        userDAOService.deleteById(id);
     }
 }
 
