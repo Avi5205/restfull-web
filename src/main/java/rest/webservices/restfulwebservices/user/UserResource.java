@@ -9,43 +9,64 @@ import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
 
-@AllArgsConstructor
 
 @RestController
 public class UserResource {
 
-    @Autowired
-    private UserDAOService userDAOService;
+    private UserDaoService service;
 
-    @GetMapping("/users")
-    public List<User> retriveAllUser() {
-        return userDAOService.findAll();
+    public UserResource(UserDaoService service) {
+        this.service = service;
     }
 
-    @GetMapping("/users/{id}")
-    public EntityModel<User> retrieveUser(@PathVariable Integer id) {
-        User user = userDAOService.findById(id);
+    @GetMapping("/users")
+    public List<User> retrieveAllUsers() {
+        return service.findAll();
+    }
 
-        if (user == null) {
-            throw new UserNotFoundException("id " + id);
-        }
+
+    //http://localhost:8080/users
+
+    //EntityModel
+    //WebMvcLinkBuilder
+
+    @GetMapping("/users/{id}")
+    public EntityModel<User> retrieveUser(@PathVariable int id) {
+        User user = service.findOne(id);
+
+        if(user==null)
+            throw new UserNotFoundException("id:"+id);
+
         EntityModel<User> entityModel = EntityModel.of(user);
-        WebMvcLinkBuilder link = linkTo(methodOn(this.getClass()).retriveAllUser());
+
+        WebMvcLinkBuilder link =  linkTo(methodOn(this.getClass()).retrieveAllUsers());
         entityModel.add(link.withRel("all-users"));
+
         return entityModel;
+    }
+
+    @DeleteMapping("/users/{id}")
+    public void deleteUser(@PathVariable int id) {
+        service.deleteById(id);
     }
 
     @PostMapping("/users")
     public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
-        return new ResponseEntity<User>(userDAOService.saveUser(user), HttpStatus.CREATED);
+
+        User savedUser = service.save(user);
+
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(savedUser.getId())
+                .toUri();
+
+        return ResponseEntity.created(location).build();
     }
 
-    @DeleteMapping("/users/{id}")
-    public void deleteUser(@PathVariable Integer id) {
-        userDAOService.deleteById(id);
-    }
+
 }
-
